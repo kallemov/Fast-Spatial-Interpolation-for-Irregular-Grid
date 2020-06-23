@@ -8,7 +8,7 @@ The library uses the explicit solution, thus avoiding an expensive linear solver
 
 This library was used to only create an interpolation stencil in Watershed project, so there is no standard api at the moment.
 
-I provided an interface for python linking a C library and create a demostration
+I provided an example how to make an interface for linking the shared C library in python code and to create a demostration
 
 To create a shared C lib:
 
