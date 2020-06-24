@@ -11,7 +11,8 @@ static double _axx,_axy,_ayy;
 static double _bx,_by,_c;
 static bool isInitialized = false;
 
-const double interp_scatt_bilinear(const double x, const double y)
+const double interp_scatt_bilinear(const double x,
+				   const double y)
 {
     if (!isInitialized)
     {
@@ -21,7 +22,8 @@ const double interp_scatt_bilinear(const double x, const double y)
     return (x*(_axx*x + _axy*y + _bx) + y*(_ayy*y + _by) +_c);
 }
 
-const double scatt_bilinear_derivative_x(const double x, const double y)
+const double scatt_bilinear_derivative_x(const double x,
+					 const double y)
 {
     if (!isInitialized)
     {
@@ -31,7 +33,8 @@ const double scatt_bilinear_derivative_x(const double x, const double y)
     return (2.*_axx*x + _axy*y + _bx);
 }
 
-const double scatt_bilinear_derivative_y(const double x, const double y)
+const double scatt_bilinear_derivative_y(const double x,
+					 const double y)
 {
     if (!isInitialized)
     {
@@ -40,8 +43,11 @@ const double scatt_bilinear_derivative_y(const double x, const double y)
     }
     return (2.*_ayy*y + _axy*x + _by);
 }
+
     
-    const double scatt_bilinear_derivative(const double x, const double y, const int dir)
+const double scatt_bilinear_derivative(const double x,
+				       const double y,
+				       const int dir)
 {
     if (!isInitialized)
     {
@@ -59,8 +65,132 @@ const double scatt_bilinear_derivative_y(const double x, const double y)
     }
 }
 
+
+void scatt_bilinear_derivative_stencil_x(double* weights_x,
+					 const double* x,
+					 const double* y)
+{
+    double denom = pow(x[2],2)*(pow(x[1],2)*pow(x[1] - x[2],2)*pow(y[0],2) + 2*x[0]*x[1]*(x[1] - x[2])*(-x[0] + x[2])*y[0]*y[1] + 
+				(pow(x[0],2)*pow(x[0] - x[2],2) + pow(x[0] - x[1],2)*pow(y[0],2) + pow(y[0],4))*pow(y[1],2) - 
+				2*pow(y[0],3)*pow(y[1],3) + pow(y[0],2)*pow(y[1],4)) + 
+	2*x[2]*(x[0]*(x[0] - x[1])*pow(x[1],2)*(x[1] - x[2])*y[0] - x[1]*(pow(x[0],2)*(x[0] - x[1])*(x[0] - x[2]) + (x[0] - x[1])*(x[0] - x[2])*pow(y[0],2) + pow(y[0],4))*y[1] + 
+		y[0]*(x[0]*(x[0] - x[1])*(x[1] - x[2]) + x[1]*pow(y[0],2))*pow(y[1],2) + x[0]*pow(y[0],2)*pow(y[1],3) - x[0]*y[0]*pow(y[1],4))*y[2] + 
+	(pow(x[1],2)*(pow(x[0],2)*pow(x[0] - x[1],2) + pow(x[0] - x[2],2)*pow(y[0],2) + pow(y[0],4)) + 
+	 2*x[1]*y[0]*(x[0]*(x[1] - x[2])*(-x[0] + x[2]) + x[2]*pow(y[0],2))*y[1] + 
+	 (pow(x[0],2)*pow(x[1] - x[2],2) - 2*(x[1]*x[2] + x[0]*(x[1] + x[2]))*pow(y[0],2))*pow(y[1],2) + 2*x[0]*x[2]*y[0]*pow(y[1],3) + 
+	 pow(x[0],2)*pow(y[1],4))*pow(y[2],2) - 2*(x[1]*y[0] - x[0]*y[1])*(x[1]*pow(y[0],2) - x[0]*pow(y[1],2))*pow(y[2],3) + 
+	pow(x[1]*y[0] - x[0]*y[1],2)*pow(y[2],4);
     
-void init_scatt_bilinear(const double* f, const double* x, const double* y)
+    weights_x[0] =(-(pow(x[1],4)*(y[0] - y[2])*(x[2]*y[0] - x[0]*y[2])) + pow(x[1],3)*(y[0] - y[2])*(pow(x[2],2)*y[0] - pow(x[0],2)*y[2]) + 
+		   y[1]*(pow(x[0],3)*pow(x[2],2)*(y[1] - y[2]) + pow(x[0],4)*x[2]*(-y[1] + y[2]) + x[2]*y[0]*pow(y[0] - y[1],2)*(y[0] - y[2])*(-y[1] + y[2]) + 
+			 x[0]*(y[0] - y[1])*(pow(x[2],4) - (y[0] - y[2])*pow(y[1] - y[2],2)*y[2] + pow(x[2],2)*y[2]*(-y[0] + y[2])) + 
+			 pow(x[0],2)*x[2]*(pow(x[2],2)*(-y[0] + y[1]) + y[0]*(y[0] - y[2])*(-y[1] + y[2]))) + 
+		   pow(x[1],2)*(pow(x[2],3)*y[0]*(y[0] - y[1]) + x[0]*y[2]*(y[1]*(-y[0] + y[1])*(y[0] - y[2]) + pow(x[0],2)*(-y[1] + y[2])) - 
+				x[0]*pow(x[2],2)*(-2*y[1]*y[2] + y[0]*(y[1] + y[2])) + 
+				x[2]*(y[0]*y[1]*(y[0] - y[2])*(-y[1] + y[2]) + pow(x[0],2)*(2*y[0]*y[1] - (y[0] + y[1])*y[2]))) + 
+		   x[1]*(pow(x[2],4)*y[0]*(-y[0] + y[1]) - (-pow(x[0],4) + pow(x[0],2)*y[0]*(-y[0] + y[1]) - y[0]*(y[0] - y[1])*pow(y[0] - y[2],2))*
+			 (y[1] - y[2])*y[2] - pow(x[2],2)*(-(y[0]*(y[0] - y[1])*(y[1] - y[2])*y[2]) + pow(x[0],2)*(y[0]*y[1] - 2*y[0]*y[2] + y[1]*y[2])) + 
+			 2*x[0]*x[2]*(pow(y[1],2)*pow(y[2],2) - y[0]*y[1]*y[2]*(y[1] + y[2]) + pow(y[0],2)*(pow(y[1],2) - y[1]*y[2] + pow(y[2],2)))));
+    weights_x[1] = (-(pow(x[2],3)*y[1]*(-(pow(x[1],2)*y[0]) + x[1]*x[2]*y[0] + x[0]*(x[0] - x[2])*y[1])) + 
+		    x[2]*(pow(x[1],3)*(-x[1] + x[2])*y[0] + x[0]*x[1]*(-2*x[1]*x[2] + x[0]*(x[1] + x[2]))*y[1] + (x[0] - x[1])*(x[1] - x[2])*y[0]*pow(y[1],2) + 
+			  pow(y[0],2)*pow(y[1],3) - y[0]*pow(y[1],4))*y[2] - x[0]*(x[0] - x[1])*pow(x[1],3)*pow(y[2],2) - 
+		    x[1]*(x[0] - x[2])*(x[1] - x[2])*y[0]*y[1]*pow(y[2],2) + x[0]*pow(x[1] - x[2],2)*pow(y[1],2)*pow(y[2],2) + 
+		    (-x[1] - x[2])*pow(y[0],2)*pow(y[1],2)*pow(y[2],2) + x[2]*y[0]*pow(y[1],3)*pow(y[2],2) + x[0]*pow(y[1],4)*pow(y[2],2) + 
+		    y[1]*(-2*x[0]*pow(y[1],2) + x[1]*y[0]*(y[0] + y[1]))*pow(y[2],3) - y[1]*(x[1]*y[0] - x[0]*y[1])*pow(y[2],4));
+    weights_x[2] = (pow(x[2],3)*y[0]*(-(pow(x[1],2)*y[0]) + x[1]*x[2]*y[0] + x[0]*(x[0] - x[2])*y[1]) + 
+		    x[2]*(x[0]*x[1]*(x[0]*(x[1] - 2*x[2]) + x[1]*x[2])*y[0] - (pow(x[0],3)*(x[0] - x[2]) + (x[0] - x[1])*(x[0] - x[2])*pow(y[0],2) + pow(y[0],4))*
+			  y[1] + pow(y[0],3)*pow(y[1],2))*y[2] + pow(x[0],3)*(x[0] - x[1])*x[1]*pow(y[2],2) + 
+		    x[1]*pow(x[0] - x[2],2)*pow(y[0],2)*pow(y[2],2) + x[1]*pow(y[0],4)*pow(y[2],2) - 
+		    x[0]*(x[0] - x[2])*(x[1] - x[2])*y[0]*y[1]*pow(y[2],2) + x[2]*pow(y[0],3)*y[1]*pow(y[2],2) + 
+		    (-x[0] - x[2])*pow(y[0],2)*pow(y[1],2)*pow(y[2],2) + y[0]*(-2*x[1]*pow(y[0],2) + x[0]*y[1]*(y[0] + y[1]))*pow(y[2],3) + 
+		    y[0]*(x[1]*y[0] - x[0]*y[1])*pow(y[2],4));
+    weights_x[3] = (x[2]*(pow(x[1],3)*(x[1] - x[2])*pow(y[0],2) + x[0]*x[1]*(-2*x[0]*x[1] + (x[0] + x[1])*x[2])*y[0]*y[1] + 
+			  (pow(x[0],3)*(x[0] - x[2]) + pow(x[0] - x[1],2)*pow(y[0],2) + pow(y[0],4))*pow(y[1],2) - 2*pow(y[0],3)*pow(y[1],3) + 
+			  pow(y[0],2)*pow(y[1],4)) + (x[0]*(x[0] - x[1])*pow(x[1],3)*y[0] -x[1]*(pow(x[0],3)*(x[0] - x[1]) + (x[0] - x[1])*(x[0] - x[2])*pow(y[0],2) + pow(y[0],4))*y[1] + 
+						      y[0]*(x[0]*(x[0] - x[1])*(x[1] - x[2]) + x[1]*pow(y[0],2))*pow(y[1],2) + x[0]*pow(y[0],2)*pow(y[1],3) - x[0]*y[0]*pow(y[1],4))*y[2] + 
+		    y[0]*(y[0] - y[1])*y[1]*(x[1]*y[0] - x[0]*y[1])*pow(y[2],2));
+        
+    for (int c=0;c<4;c++) weights_x[c] /=denom;   
+}
+
+void scatt_bilinear_derivative_stencil_y(double* weights_y,
+					 const double* x,
+					 const double* y)
+{
+    double denom = pow(x[2],2)*(pow(x[1],2)*pow(x[1] - x[2],2)*pow(y[0],2) + 2*x[0]*x[1]*(x[1] - x[2])*(-x[0] + x[2])*y[0]*y[1] + 
+				(pow(x[0],2)*pow(x[0] - x[2],2) + pow(x[0] - x[1],2)*pow(y[0],2) + pow(y[0],4))*pow(y[1],2) - 
+				2*pow(y[0],3)*pow(y[1],3) + pow(y[0],2)*pow(y[1],4)) + 
+	2*x[2]*(x[0]*(x[0] - x[1])*pow(x[1],2)*(x[1] - x[2])*y[0] - x[1]*(pow(x[0],2)*(x[0] - x[1])*(x[0] - x[2]) + (x[0] - x[1])*(x[0] - x[2])*pow(y[0],2) + pow(y[0],4))*y[1] + 
+		y[0]*(x[0]*(x[0] - x[1])*(x[1] - x[2]) + x[1]*pow(y[0],2))*pow(y[1],2) + x[0]*pow(y[0],2)*pow(y[1],3) - x[0]*y[0]*pow(y[1],4))*y[2] + 
+	(pow(x[1],2)*(pow(x[0],2)*pow(x[0] - x[1],2) + pow(x[0] - x[2],2)*pow(y[0],2) + pow(y[0],4)) + 
+     2*x[1]*y[0]*(x[0]*(x[1] - x[2])*(-x[0] + x[2]) + x[2]*pow(y[0],2))*y[1] + 
+	 (pow(x[0],2)*pow(x[1] - x[2],2) - 2*(x[1]*x[2] + x[0]*(x[1] + x[2]))*pow(y[0],2))*pow(y[1],2) + 2*x[0]*x[2]*y[0]*pow(y[1],3) + 
+	 pow(x[0],2)*pow(y[1],4))*pow(y[2],2) - 2*(x[1]*y[0] - x[0]*y[1])*(x[1]*pow(y[0],2) - x[0]*pow(y[1],2))*pow(y[2],3) + 
+	pow(x[1]*y[0] - x[0]*y[1],2)*pow(y[2],4);
+    
+    
+    
+    weights_y[0] = (-(pow(x[0],4)*(x[1] - x[2])*(-(x[2]*y[1]) + x[1]*y[2])) + pow(x[0],3)*(x[1] - x[2])*(-(x[2]*(x[1] + 2*x[2])*y[1]) + x[1]*(2*x[1] + x[2])*y[2]) - 
+		    y[0]*(pow(x[1],4)*pow(x[2],2) - 2*pow(x[1],3)*pow(x[2],3) + pow(x[2],2)*pow(y[0] - y[1],2)*y[1]*(y[0] + y[1]) + 
+			  pow(x[1],2)*(pow(x[2],4) + pow(x[2],2)*pow(y[1] - y[2],2) + pow(y[0] - y[2],2)*y[2]*(y[0] + y[2])) - 
+			  x[1]*x[2]*(y[0] - y[1])*(y[0] - y[2])*(2*y[1]*y[2] + y[0]*(y[1] + y[2]))) - 
+		    pow(x[0],2)*(pow(x[1],4)*y[2] + pow(x[1],3)*x[2]*(y[0] + y[2]) + 
+				 x[1]*x[2]*(pow(x[2],2)*(y[0] + y[1]) - (y[0] - y[1])*(y[0] - y[2])*(y[1] + y[2])) + 
+				 y[1]*(pow(x[2],4) + pow(x[2],2)*pow(y[0] - y[2],2) + pow(y[1] - y[2],2)*y[2]*(y[1] + y[2])) + 
+				 pow(x[1],2)*(pow(y[0] - y[1],2)*y[2] - 2*pow(x[2],2)*(y[0] + y[1] + y[2]))) - 
+		    x[0]*(-(pow(x[1],4)*x[2]*(y[0] + y[2])) + pow(x[1],3)*pow(x[2],2)*(y[0] + y[2]) + 
+			  pow(x[1],2)*x[2]*(pow(x[2],2)*(y[0] + y[1]) + (y[0] - y[1])*(y[1] - y[2])*(y[0] + y[2])) + 
+			  x[2]*(y[0] - y[1])*y[1]*(y[1] - y[2])*(y[1]*y[2] + y[0]*(y[1] + 2*y[2])) + 
+			  x[1]*(-(pow(x[2],4)*(y[0] + y[1])) - pow(x[2],2)*(y[0] + y[1])*(y[0] - y[2])*(y[1] - y[2]) + 
+				(y[0] - y[2])*y[2]*(-y[1] + y[2])*(2*y[0]*y[1] + (y[0] + y[1])*y[2]))));
+    
+    weights_y[1] = (pow(x[1],4)*pow(x[2],2)*y[0] - 2*pow(x[1],3)*pow(x[2],3)*y[0] + pow(x[1],2)*pow(x[2],4)*y[0] - 
+		    pow(x[0],2)*pow(x[1],2)*pow(x[2],2)*y[1] + pow(x[0],2)*x[1]*pow(x[2],3)*y[1] + x[0]*pow(x[1],2)*pow(x[2],3)*y[1] - 
+		    x[0]*x[1]*pow(x[2],4)*y[1] - x[0]*x[1]*pow(x[2],2)*y[0]*pow(y[1],2) + pow(x[1],2)*pow(x[2],2)*y[0]*pow(y[1],2) - 
+		    pow(x[2],2)*pow(y[0],2)*pow(y[1],3) + pow(x[2],2)*y[0]*pow(y[1],4) - x[0]*(x[0] - x[1])*pow(x[1],2)*x[2]*(-x[1] + x[2])*y[2] + 
+		    x[1]*x[2]*(-2*x[1]*x[2] + x[0]*(x[1] + x[2]))*y[0]*y[1]*y[2] + x[1]*x[2]*(x[0]*(-x[1] + x[2]) + pow(y[0],2))*pow(y[1],2)*y[2] - 
+		    x[0]*x[2]*pow(y[1],4)*y[2] - pow(x[1],2)*(x[0] - x[2])*x[2]*y[0]*pow(y[2],2) + x[0]*x[1]*(x[1] - x[2])*x[2]*y[1]*pow(y[2],2) + 
+		    x[1]*x[2]*pow(y[0],2)*y[1]*pow(y[2],2) - 2*x[1]*x[2]*y[0]*pow(y[1],2)*pow(y[2],2) + x[0]*x[2]*pow(y[1],3)*pow(y[2],2) + 
+		    x[1]*(-(x[1]*pow(y[0],2)) + x[0]*pow(y[1],2))*pow(y[2],3) - x[1]*(-(x[1]*y[0]) + x[0]*y[1])*pow(y[2],4));
+    
+    weights_y[2] = (-(pow(x[0],2)*pow(x[1],2)*pow(x[2],2)*y[0]) + pow(x[0],2)*x[1]*pow(x[2],3)*y[0] + x[0]*pow(x[1],2)*pow(x[2],3)*y[0] - 
+		    x[0]*x[1]*pow(x[2],4)*y[0] + pow(x[0],4)*pow(x[2],2)*y[1] - 2*pow(x[0],3)*pow(x[2],3)*y[1] + pow(x[0],2)*pow(x[2],4)*y[1] + 
+		    pow(x[0],2)*pow(x[2],2)*pow(y[0],2)*y[1] - x[0]*x[1]*pow(x[2],2)*pow(y[0],2)*y[1] + pow(x[2],2)*pow(y[0],4)*y[1] - 
+		    pow(x[2],2)*pow(y[0],3)*pow(y[1],2) - pow(x[0],2)*(x[0] - x[1])*x[1]*(x[0] - x[2])*x[2]*y[2] + 
+		    x[0]*x[1]*x[2]*(-x[0] + x[2])*pow(y[0],2)*y[2] - x[1]*x[2]*pow(y[0],4)*y[2] + x[0]*x[2]*(x[0]*(x[1] - 2*x[2]) + x[1]*x[2])*y[0]*y[1]*y[2] + 
+		    x[0]*x[2]*pow(y[0],2)*pow(y[1],2)*y[2] + x[0]*x[1]*(x[0] - x[2])*x[2]*y[0]*pow(y[2],2) + x[1]*x[2]*pow(y[0],3)*pow(y[2],2) - 
+		    pow(x[0],2)*(x[1] - x[2])*x[2]*y[1]*pow(y[2],2) - 2*x[0]*x[2]*pow(y[0],2)*y[1]*pow(y[2],2) + x[0]*x[2]*y[0]*pow(y[1],2)*pow(y[2],2) - 
+		    x[0]*(-(x[1]*pow(y[0],2)) + x[0]*pow(y[1],2))*pow(y[2],3) + x[0]*(-(x[1]*y[0]) + x[0]*y[1])*pow(y[2],4));
+    
+    weights_y[3] = (pow(x[0],4)*x[1]*(-(x[2]*y[1]) + x[1]*y[2]) + pow(x[0],3)*x[1]*(x[2]*(x[1] + x[2])*y[1] - 2*pow(x[1],2)*y[2]) + 
+		    x[1]*pow(y[0],3)*(x[2]*y[1]*(-y[0] + y[1]) + x[1]*(y[0] - y[2])*y[2]) + 
+		    pow(x[0],2)*(pow(x[1],3)*x[2]*y[0] - x[1]*x[2]*(y[0] - y[1])*y[1]*(y[0] - y[2]) + pow(x[1],4)*y[2] + pow(y[1],3)*(y[1] - y[2])*y[2] + 
+				 pow(x[1],2)*(-(pow(x[2],2)*(y[0] + y[1])) + pow(y[0] - y[1],2)*y[2])) + 
+		    x[0]*y[0]*(-(pow(x[1],4)*x[2]) + pow(x[1],3)*pow(x[2],2) + x[2]*(y[0] - y[1])*pow(y[1],3) + 
+			       pow(x[1],2)*x[2]*(y[0] - y[1])*(y[1] - y[2]) + x[1]*y[1]*y[2]*(-2*y[0]*y[1] + (y[0] + y[1])*y[2])));
+    
+    for (int c=0;c<4;c++) weights_y[c] /=denom;   
+}
+
+void scatt_bilinear_derivative_stencil(double* weights,
+				       const double* x,
+				       const double* y,
+				       const int dir)
+{
+    if (dir==0)
+	scatt_bilinear_derivative_stencil_x(weights,x, y);
+    else if (dir==1)
+	scatt_bilinear_derivative_stencil_y(weights,x, y);
+    else
+    {
+        fprintf (stderr, "Coordinate index is out of the range for scattered bilinear interpopation function. \n");
+	exit (EXIT_FAILURE);
+    }
+}
+    
+void init_scatt_bilinear(const double* f,
+			 const double* x,
+			 const double* y)
 {
     // FILE *fptr = fopen("data.txt", "w");
     // for (int i=0;i<4;++i)
